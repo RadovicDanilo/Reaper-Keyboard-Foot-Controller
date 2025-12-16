@@ -16,4 +16,4 @@
 
 * `Add marker if recording.lua`: (optional) Adds a marker when a key is pressed if recording
 
-* `Footswitch_Actions.lua`: (optional) Blocks multiple tracks from being unmuted at once, you should run this on startup with SWS
+* `Enforce Single Unmuted Track.lua`: (optional) Blocks multiple tracks from being unmuted at once, you should run this on startup with SWS
