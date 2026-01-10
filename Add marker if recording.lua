@@ -1,4 +1,5 @@
--- Adds a unique marker each time tone is switched, but only if REAPER is recording
+-- Adds a marker each time the script is run, but only if REAPER is recording
+-- Used to mark the location of a tone switch when recording
 
 function add_marker_if_recording()
   local state = reaper.GetPlayState()

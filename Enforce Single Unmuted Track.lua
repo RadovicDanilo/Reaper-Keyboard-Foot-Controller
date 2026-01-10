@@ -1,7 +1,6 @@
--- Allow only one guitar track unmuted at any time
--- For live use with footswitch/keyboard mute toggles
+-- Allow only one Reaper track to be unmuted at any time
+-- For use with footswitch/keyboard mute toggles
 -- Keeps all tracks armed, avoids double-audio spikes
--- CPU: negligible
 
 function enforce_single_unmuted()
   local track_count = reaper.CountTracks(0)
