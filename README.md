@@ -1,84 +1,71 @@
-# 🎸 Reaper-Keyboard-Foot-Controller 
+# 🎸 Reaper-Keyboard-Foot-Controller
 
-**Reaper-Keyboard-Foot-Controller** lets you use a **second keyboard** as a dedicated foot / macro controller for **REAPER**.  
+**Reaper-Keyboard-Foot-Controller** lets you use a **second keyboard** as a dedicated foot / macro controller for **REAPER** and **AmpliTube**. It can send either **MIDI** singals or **key presses** (F13-F22).
 
-## 🧠 What is this? 
+## 🧠 What is this?
 
-At a high level: **AutoHotkey + AutoHotInterception (AHI)** intercepts keys **only from one physical keyboard**, remaps them to `F13–F22`, and injects them into REAPER using `PostMessage`. 
+At a high level: **AutoHotkey + AutoHotInterception (AHI)** intercepts keys **only from one physical keyboard**.
 
-Because it talks directly to REAPER’s window, it **works even when REAPER is in the background**. 
+It operates in two modes (**MIDI Mode is default**):
 
-Reaper than runs **custom user actions** to switch tracks loaded with different guitar tones.
+1. **MIDI Mode:** Sends virtual MIDI CC messages (30–39) via **loopMIDI** to control pedal bypasses in AmpliTube or actions in REAPER.
+2. **Keyboard Mode:** Remaps keys to `F13–F22` and injects them into REAPER using `PostMessage`.
 
-The setup is **very fast** with a **seamless transition** with an imperceptible delay (less than 5ms on a solid PC).
+Because it talks directly to REAPER’s window or the MIDI bus, it **works even when REAPER is in the background**.
 
-No MIDI. No focus issues. No foreground requirement. No conflict with your regular keyboard. Almost no delay.
+The setup is **very fast** with a **seamless transition** (less than 5ms delay).
 
 ---
 
-## 🔌 Dependencies 
+## 🔌 Dependencies
 
-- **AutoHotkey (v1)** -> must be installed
-- **AutoHotInterception** -> already included in `Lib/`
-- **REAPER**
-- **ReaPack** -> required *if* you want to use Lua scripts
-- **SWS** -> recommended (for auto-starting reaper scripts)
+* **AutoHotkey (v1)** -> must be installed
+* **AutoHotInterception** -> already included in `Lib/`
+* **loopMIDI** -> required to create the virtual MIDI port
+* **REAPER**
+* **ReaPack** -> required to use Lua scripts
+* **SWS** -> required to set the "Enforce Single Unmuted Track" script to run on **Reaper startup**
 
 ---
 
 ## ⌨ Hardware layout ️
 
-![Keyboard example](images/kbd.jpg)
-
 **Recommendations:**
-- **10 keys total** (matches `F13–F22`)
-- Keys should be **well spaced** so you can hit them blindly with your foot
-- If the keys are too short glue **LEGO bricks** or similar plastic blocks on top to increase height and tactile feedback  
+
+* **10 keys total** 
+* Keys should be **well spaced** so you can hit them blindly with your foot
+* If the keys are too short glue **LEGO bricks** or similar plastic blocks on top to increase height and tactile feedback
 
 ---
 
-## 📁 Repository structure 
+## 📁 Repository structure
 
-- **`ReaperControl.ahk`**  
-  Main script. Intercepts keys from the second keyboard and sends them to REAPER.
-
-- **`Monitor.ahk`**  
-  Utility to:
-  - detect **DeviceID** of each keyboard
-  - see **key IDs** when you press them
-
-- **`Lib/`**  
-  AutoHotInterception libraries and DLLs (already included).
-
-- **`Add marker if recording.lua`** *(optional)*  
-  Adds a marker when triggered, but only if REAPER is recording.
-
-- **`Enforce Single Unmuted Track.lua`** *(optional)*  
-  Prevents more than one track from being unmuted at the same time.
+* **`ReaperControl.ahk`** Main script. Intercepts keys from the second keyboard. Handles MIDI CC 30–39 and Keyboard F13–F22 logic.
+* **`Monitor.ahk`** Utility to detect **DeviceID** of each keyboard and see **ScanCodes** (like 347, 57, etc.) when you press them.
+* **`Lib/`** AutoHotInterception libraries and DLLs (already included).
+* **`Add marker if recording.lua`** *(optional)* Adds a marker when triggered, but only if REAPER is recording.
+* **`Enforce Single Unmuted Track.lua`** *(optional)* Prevents more than one track from being unmuted at the same time.
 
 ---
 
-## ️⚙ Core script (`ReaperControl.ahk`) 
+## ️⚙ Core script (`ReaperControl.ahk`)
 
-This is the main part of the setup.
+### 🧩 What this actually does
 
-### 🧩 What this actually does 
-
-* Subscribes to **keyboard ID(s)**
-* Maps 10 physical keys → `F13–F22`
-* Sends key **down/up** events straight into REAPER’s track list window
-* No focus needed
+* Subscribes to **keyboard ID(s)** (IDs 6–10, see the next section for the explanation)
+* **MIDI Mode (Default):** Sends CC messages.
+* **Keyboard Mode:** Maps 10 physical keys → `F13–F22`.
+* **Mode Switch:** Physical key 9 (ScanCode 10) toggles between modes. You can press this one with a pen if you dont want to include a physical key cap.
+* Sends events straight into REAPER or the MIDI port with no focus needed.
 
 ---
 
-## 🔍 Finding the correct keyboard and keys 
+## 🔍 Finding the correct keyboard and keys
 
-Run **`Monitor.ahk`**.
-
-You will see:
+Run **`Monitor.ahk`**. You will see:
 
 * Which **keyboard device ID** is producing input
-* Which **key ID** is pressed
+* Which **ScanCode** is pressed (Mapping uses these codes, e.g., 347, 57)
 
 Important details:
 
@@ -95,44 +82,44 @@ This guarantees the second keyboard is always detected, even if I unplug and rep
 
 ---
 
-## 🚀 Set the AHK script to run on startup 
-
-This script, if setup correctly, will have no impact on other keyboards. Since it has no effects on the CPU it is best to set it up to run on PC startup. 
+## 🚀 Set the AHK script to run on startup
 
 This is easily achived by creating a shortcut to the script and placing it in the windwos startup folder.
+This is easily achieved by creating a shortcut to the script and placing it in the Windows startup folder (`shell:startup`).
 
 ---
 
-## ️🎵 REAPER setup 
+## ️🎵 REAPER setup
 
-For **each key (`F13–F22`)**, create a REAPER action that does the following:
+For **Keyboard Mode (`F13–F22`)**, create actions to:
 
 1. **Mute all tracks**
 2. **Unmute track N**
 3. **Run “Add marker if recording.lua”**
 
-That logic lives in REAPER, not in AHK.
-AHK only delivers clean, isolated key presses.
-
 **Note:** all tracks that you wish to use will need to be **armed for recording**
 
 ---
 
-## 📜 Optional Lua scripts 
+For **MIDI Mode (CC 30–39)**:
+
+* Map CCs to pedal bypasses in AmpliTube.
+* Map to REAPER actions like the **Tuner**.
+
+---
+
+## 📜 Optional Lua scripts (only for keyboard mode)
 
 ### `Add marker if recording.lua`
 
-* Adds a marker only if REAPER is currently recording
-* Safe to trigger at all times
-* Requires **ReaPack**
+* Adds a marker only if REAPER is currently recording.
+* Requires **ReaPack**.
 
 ### `Enforce Single Unmuted Track.lua`
 
-* Continuously enforces that only **one track** can be unmuted
-* This is **not neccessary** it is only a safety precaution because all tracksa will be armed for recording
-* Runs in the background
-* Can be easily terminated when not needed. 
-* Use **SWS** to auto-start it on REAPER launch
+* Safety precaution to ensure only one track is unmuted.
+* Requires **ReaPack**.
+* Use **SWS** to auto-start this when REAPER opens.
 
 ---
 
@@ -140,7 +127,15 @@ AHK only delivers clean, isolated key presses.
 
 I recomend that you have one track that will be used a **tuner**
 
+### keyboard mode
+
 * I recommend that you set it to be the **last track (track 10)**
 * Add a **tuner plugin**, you can used the built-in *ReaTune**
 * Set the volume to **-inf**, it is not enough to just mute it
 * Dock the FX windwos to the reaper **Docker** to make it **always visible**
+
+### MIDI mode
+
+* Set it to be the **first track (track 1)**
+* Create a **Custom Action** using `Action: Skip next action if CC parameter <= 0/mid` followed by `Track: toggle solo for track 01`.
+* everything else is the same for the keyboard version, set volume to -inf and dock to the reaper docker
