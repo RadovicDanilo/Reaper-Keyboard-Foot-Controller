@@ -74,7 +74,7 @@ Important details:
 
   * It increments every time you plug/unplug a device
   * It resets only after a full shutdown
-* The **maximum ID is 10**
+  * The **maximum ID is 10**
 
 Because of that, this script subscribes to **everything above ID 5**, because in my case I have 5 keyboarad devices that are alredy plugged into my PC:
 
@@ -84,7 +84,6 @@ This guarantees the second keyboard is always detected, even if I unplug and rep
 
 ## 🚀 Set the AHK script to run on startup
 
-This is easily achived by creating a shortcut to the script and placing it in the windwos startup folder.
 This is easily achieved by creating a shortcut to the script and placing it in the Windows startup folder (`shell:startup`).
 
 ---
