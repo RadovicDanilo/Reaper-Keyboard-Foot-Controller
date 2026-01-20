@@ -30,6 +30,8 @@ The setup is **very fast** with a **seamless transition** (less than 5ms delay).
 
 ## ⌨ Hardware layout ️
 
+![Keyboard example](images/kbd.jpg)
+
 **Recommendations:**
 
 * **10 keys total** 
