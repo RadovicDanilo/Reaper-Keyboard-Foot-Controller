@@ -1,6 +1,6 @@
 # 🎸 Reaper-Keyboard-Foot-Controller
 
-**Reaper-Keyboard-Foot-Controller** lets you use a **second keyboard** as a dedicated foot / macro controller for **REAPER** and **AmpliTube**. It can send either **MIDI** singals or **key presses** (F13-F22).
+**Reaper-Keyboard-Foot-Controller** lets you use a **second keyboard** as a dedicated foot / macro controller for **REAPER** and **other DAWs**. It can send either **MIDI events** or **key presses** (F13-F22).
 
 ## 🧠 What is this?
 
@@ -8,8 +8,10 @@ At a high level: **AutoHotkey + AutoHotInterception (AHI)** intercepts keys **on
 
 It operates in two modes (**MIDI Mode is default**):
 
-1. **MIDI Mode:** Sends virtual MIDI CC messages (30–39) via **loopMIDI** to control pedal bypasses in AmpliTube or actions in REAPER.
-2. **Keyboard Mode:** Remaps keys to `F13–F22` and injects them into REAPER using `PostMessage`.
+1. **MIDI Mode:** Sends virtual MIDI CC messages (30–39) via **loopMIDI**. 
+  - This mode will work with other DAWs and with standalone plugins.
+2. **Keyboard Mode:** Remaps keys to `F13–F22` and injects them directly into REAPER using `PostMessage`. 
+  - This mode is tailore to reaper, but it can be made to work with other programs too.
 
 Because it talks directly to REAPER’s window or the MIDI bus, it **works even when REAPER is in the background**.
 
@@ -22,7 +24,9 @@ The setup is **very fast** with a **seamless transition** (less than 5ms delay).
 * **AutoHotkey (v1)** -> must be installed
 * **AutoHotInterception** -> already included in `Lib/`
 * **loopMIDI** -> required to create the virtual MIDI port
-* **REAPER**
+
+Optional:
+
 * **ReaPack** -> required to use Lua scripts
 * **SWS** -> required to set the "Enforce Single Unmuted Track" script to run on **Reaper startup**
 
@@ -49,6 +53,10 @@ The setup is **very fast** with a **seamless transition** (less than 5ms delay).
 * **`Enforce Single Unmuted Track.lua`** *(optional)* Prevents more than one track from being unmuted at the same time.
 
 ---
+
+## ⚙ LoopMIDI setup
+
+After installing LoopMIDI create a port called: `LoopMIDI Port`
 
 ## ️⚙ Core script (`ReaperControl.ahk`)
 
@@ -104,6 +112,8 @@ For **Keyboard Mode (`F13–F22`)**, create actions to:
 
 For **MIDI Mode (CC 30–39)**:
 
+Examples:
+
 * Map CCs to pedal bypasses in AmpliTube.
 * Map to REAPER actions like the **Tuner**.
 
@@ -131,7 +141,7 @@ I recomend that you have one track that will be used a **tuner**
 ### keyboard mode
 
 * I recommend that you set it to be the **last track (track 10)**
-* Add a **tuner plugin**, you can used the built-in *ReaTune**
+* Add a **tuner plugin**, you can used the built-in **ReaTune**
 * Set the volume to **-inf**, it is not enough to just mute it
 * Dock the FX windwos to the reaper **Docker** to make it **always visible**
 
@@ -139,4 +149,4 @@ I recomend that you have one track that will be used a **tuner**
 
 * Set it to be the **first track (track 1)**
 * Create a **Custom Action** using `Action: Skip next action if CC parameter <= 0/mid` followed by `Track: toggle solo for track 01`.
-* everything else is the same for the keyboard version, set volume to -inf and dock to the reaper docker
+* everything else is the same as for the keyboard version, set volume to -inf and dock to the reaper docker etc.
