@@ -1,38 +1,27 @@
-# 🎸 Reaper-Keyboard-Foot-Controller
+# 🎸 MIDI-Keyboard-Foot-Controller
 
-**Reaper-Keyboard-Foot-Controller** lets you use a **second keyboard** as a dedicated foot / macro controller for **REAPER** and **other DAWs**. It can send either **MIDI events** or **key presses** (F13-F22).
+**MIDI-Keyboard-Foot-Controller** turns a **second keyboard** into a MIDI foot pedalboard. By using **AutoHotkey** and **AutoHotInterception (AHI)**, it converts physical key presses from a specific device into **MIDI CC messages** without interfering with your main typing keyboard.
 
-## 🧠 What is this?
+## 🧠 How it works
 
-At a high level: **AutoHotkey + AutoHotInterception (AHI)** intercepts keys **only from one physical keyboard**.
+The script intercepts raw input from secondary keyboards and converts them into **MIDI CC commands** organized into 3 "Groups" or "Modes."
 
-It operates in two modes (**MIDI Mode is default**):
-
-1. **MIDI Mode:** Sends virtual MIDI CC messages (30–39) via **loopMIDI**. 
-  - This mode will work with other DAWs and with standalone plugins.
-2. **Keyboard Mode:** Remaps keys to `F13–F22` and injects them directly into REAPER using `PostMessage`. 
-  - This mode is tailore to reaper, but it can be made to work with other programs too.
-
-Because it talks directly to REAPER’s window or the MIDI bus, it **works even when REAPER is in the background**.
-
-The setup is **very fast** with a **seamless transition** (less than 5ms delay).
+* **Pure MIDI:** It communicates via virtual MIDI ports.
+* **Universal Compatibility:** Works with **AmpliTube, Neural DSP, Guitar Rig, REAPER, Ableton, Logic**, and any other software that accepts MIDI CC.
+* **Background Operation:** Works even when your DAW or Plugin is minimized or not in focus.
+* **Visual HUD:** A minimalist 4K-ready On-Screen Display (OSD) shows the active Mode (1, 2, or 3) whenever you switch.
 
 ---
 
 ## 🔌 Dependencies
 
-* **AutoHotkey (v1)** -> must be installed
-* **AutoHotInterception** -> already included in `Lib/`
-* **loopMIDI** -> required to create the virtual MIDI port
-
-Optional:
-
-* **ReaPack** -> required to use Lua scripts
-* **SWS** -> required to set the "Enforce Single Unmuted Track" script to run on **Reaper startup**
+* **[AutoHotkey (v1.1)](https://www.autohotkey.com/)** -> The scripting engine.
+* **[AutoHotInterception](https://github.com/evilC/AutoHotInterception)** -> Library included in `Lib/` to isolate the second keyboard.
+* **[loopMIDI](https://www.tobias-erichsen.de/software/loopmidi.html)** -> Required to create the virtual MIDI cable.
 
 ---
 
-## ⌨ Hardware layout ️
+## ⌨️ Hardware Layout
 
 ![Keyboard example](images/kbd.jpg)
 
@@ -44,109 +33,54 @@ Optional:
 
 ---
 
-## 📁 Repository structure
+## 📁 Repository Structure
 
-* **`ReaperControl.ahk`** Main script. Intercepts keys from the second keyboard. Handles MIDI CC 30–39 and Keyboard F13–F22 logic.
-* **`Monitor.ahk`** Utility to detect **DeviceID** of each keyboard and see **ScanCodes** (like 347, 57, etc.) when you press them.
-* **`Lib/`** AutoHotInterception libraries and DLLs (already included).
-* **`Add marker if recording.lua`** *(optional)* Adds a marker when triggered, but only if REAPER is recording.
-* **`Enforce Single Unmuted Track.lua`** *(optional)* Prevents more than one track from being unmuted at the same time.
+* **`MidiFootController.ahk`**: The main script. Handles the MIDI logic.
+* **`Monitor.ahk`**: Utility to identify your secondary keyboard's **DeviceID** and find **ScanCodes**.
+* **`Lib/`**: Contains the AHI framework (Required).
 
 ---
 
-## ⚙ LoopMIDI setup
+## ⚙️ Setup Instructions
 
-After installing LoopMIDI create a port called: `LoopMIDI Port`
+### 1. LoopMIDI Setup
 
-## ️⚙ Core script (`ReaperControl.ahk`)
+1. Open loopMIDI.
+2. Create a new port named: `LoopMIDI Port`.
+3. Keep loopMIDI running in the background.
 
-### 🧩 What this actually does
+### 2. Identify your Keyboard & Keys
 
-* Subscribes to **keyboard ID(s)** (IDs 6–10, see the next section for the explanation)
-* **MIDI Mode (Default):** Sends CC messages.
-* **Keyboard Mode:** Maps 10 physical keys → `F13–F22`.
-* **Mode Switch:** Physical key 9 (ScanCode 10) toggles between modes. You can press this one with a pen if you dont want to include a physical key cap.
-* Sends events straight into REAPER or the MIDI port with no focus needed.
+Before running the main script, you must identify your specific hardware IDs using **`Monitor.ahk`**.
 
----
+#### **Identifying the Device ID**
 
-## 🔍 Finding the correct keyboard and keys
+* **The Highest ID Rule:** In most setups, the last keyboard plugged in will be assigned the **highest DeviceID**.
+* **The ID Limit:** Windows/AHI supports a maximum of **10 Keyboard IDs**.
+* **When unpluged and repluged:** If you unplug and replug your keyboard, Windows wukk increments the ID (e.g., from ID 7 to ID 8).
+* These IDs **only reset** after a full system restart.
 
-Run **`Monitor.ahk`**. You will see:
+* **Subscription Logic:** To ensure the script works even if the keyboard "moves" IDs after being replugged, the script is configured to subscribe to **ID 6 and everything above it** (up to 10). This creates a "safety net" so you don't have to edit the script every time you move a USB cable.
+* you may need to modify the line 24: `Loop, 5 {`. My keyboard ID is 6 so for me the number is 6 - 1 = 5.
 
-* Which **keyboard device ID** is producing input
-* Which **ScanCode** is pressed (Mapping uses these codes, e.g., 347, 57)
+#### **Identifying ScanCodes**
 
-Important details:
-
-* The **new keyboard will always have the highest DeviceID**
-* **DeviceID is NOT constant**
-
-  * It increments every time you plug/unplug a device
-  * It resets only after a full shutdown
-  * The **maximum ID is 10**
-
-Because of that, this script subscribes to **everything above ID 5**, because in my case I have 5 keyboarad devices that are alredy plugged into my PC:
-
-This guarantees the second keyboard is always detected, even if I unplug and replug it. This will never happen more that 3 times per day so the ID limit of 10 is inconsequential.
+1. Run `Monitor.ahk`.
+2. Press the keys you intend to use as pedals.
+3. Note the **ScanCode** for each key (e.g., `57` for Space, `347` for Right-Alt).
+4. If your keys differ from the defaults in the script, update the `Codes := [...]` array at the top of the `MidiFootController.ahk` file.
 
 ---
 
-## 🚀 Set the AHK script to run on startup
+### 3. Usage & Modes
 
-This is easily achieved by creating a shortcut to the script and placing it in the Windows startup folder (`shell:startup`).
+* **The Keys:** 10 physical keys are mapped to CC messages.
+* **The Switch:** Press **F1** on the secondary keyboard to cycle through **Modes 1, 2, and 3**.
+* **The CC Mapping:**
 
----
-
-## ️🎵 REAPER setup
-
-For **Keyboard Mode (`F13–F22`)**, create actions to:
-
-1. **Mute all tracks**
-2. **Unmute track N**
-3. **Run “Add marker if recording.lua”**
-
-**Note:** all tracks that you wish to use will need to be **armed for recording**
-
----
-
-For **MIDI Mode (CC 30–39)**:
-
-Examples:
-
-* Map CCs to pedal bypasses in AmpliTube.
-* Map to REAPER actions like the **Tuner**.
-
----
-
-## 📜 Optional Lua scripts (only for keyboard mode)
-
-### `Add marker if recording.lua`
-
-* Adds a marker only if REAPER is currently recording.
-* Requires **ReaPack**.
-
-### `Enforce Single Unmuted Track.lua`
-
-* Safety precaution to ensure only one track is unmuted.
-* Requires **ReaPack**.
-* Use **SWS** to auto-start this when REAPER opens.
-
----
-
-## 🎼 Seting up a tuner (recommended) 
-
-I recomend that you have one track that will be used a **tuner**
-
-### keyboard mode
-
-* I recommend that you set it to be the **last track (track 10)**
-* Add a **tuner plugin**, you can used the built-in **ReaTune**
-* Set the volume to **-inf**, it is not enough to just mute it
-* Dock the FX windwos to the reaper **Docker** to make it **always visible**
-
-### MIDI mode
-
-* Set it to be the **first track (track 1)**
-* Create a **Custom Action** using `Action: Skip next action if CC parameter <= 0/mid` followed by `Track: toggle solo for track 01`.
-* everything else is the same as for the keyboard version, set volume to -inf and dock to the reaper docker etc.
+| Key | Mode 1 (CC) | Mode 2 (CC) | Mode 3 (CC) |
+| --- | --- | --- | --- |
+| **Pedal 1** | 90 | 100 | 110 |
+| **Pedal 2** | 91 | 101 | 111 |
+| ... | ... | ... | ... |
+| **Pedal 10** | 99 | 109 | 119 |

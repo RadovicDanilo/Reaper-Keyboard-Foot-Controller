@@ -2,68 +2,64 @@
 #SingleInstance Force
 #Include Lib\AutoHotInterception.ahk
 
-; ScanCode: ["KeyName", VKCode, CC_Number]
-Mappings := { 347: ["F13", 0x7C, 102], 57:  ["F14", 0x7D, 103], 348: ["F15", 0x7E, 104]
-            , 336: ["F16", 0x7F, 105], 284: ["F17", 0x80, 106], 2:   ["F18", 0x81, 107]
-            , 7:   ["F19", 0x82, 108], 12:  ["F20", 0x83, 109], 327: ["F21", 0x84, 110]
-            , 55:  ["F22", 0x85, 111] }
+TargetPortName := "LoopMIDI Port"
+BaseCCs := [90, 100, 110]
+Codes := [347, 57, 348, 336, 284, 2, 7, 12, 327, 55]
 
 global hMidiOut := 0
-global IsMidiMode := true
+global ActiveGroup := 1
 global KeyStates := {}
 
-; --- INITIALIZATION ---
-TargetPortName := "LoopMIDI Port"
 MidiID := GetMidiOutId(TargetPortName)
-
-; Open Port - Using Ptr* for handles is essential for 64-bit systems
-if (MidiID != -1) {
+if (MidiID != -1)
     DllCall("winmm\midiOutOpen", "Ptr*", hMidiOut, "UInt", MidiID, "Ptr", 0, "Ptr", 0, "UInt", 0)
-}
 
 AHI := new AutoHotInterception()
-UpdateIcon()
+
+Gui, +AlwaysOnTop -Caption +LastFound +Owner +E0x20
+Gui, Color, 000000
+Gui, Font, s150 q5, Segoe UI Semibold
+Gui, Add, Text, vModeText cWhite Center w250 h250 x0 y0, 1
 
 Loop, 5 {
-    DeviceID := A_Index + 5
-    AHI.SubscribeKey(DeviceID, 10, true, Func("ToggleMode"))
-    
-    for ScanCode, Info in Mappings
-        AHI.SubscribeKey(DeviceID, ScanCode, true, Func("KeyEvent").Bind(Info[1], Info[2], Info[3]))
+    DevID := A_Index + 5
+    AHI.SubscribeKey(DevID, 59, true, Func("ShiftGroup"))
+    for index, sCode in Codes
+        AHI.SubscribeKey(DevID, sCode, true, Func("SendMidi").Bind(index))
 }
 Return
 
-ToggleMode(State) {
-    global IsMidiMode
-    if (State == 0) 
+SendMidi(KeyIndex, State) {
+    global hMidiOut, ActiveGroup, KeyStates, BaseCCs
+    if (State == KeyStates[KeyIndex])
         return
-    IsMidiMode := !IsMidiMode
-    UpdateIcon()
-}
-
-UpdateIcon() {
-    global IsMidiMode
-    Menu, Tray, Icon, shell32.dll, % (IsMidiMode ? 132 : 138)
-}
-
-KeyEvent(KeyName, VK, CC, State) {
-    global hMidiOut, IsMidiMode, KeyStates
-    
-    if (IsMidiMode && hMidiOut) {
-        ; 0xB0 = Control Change, Channel 1
-        ; msg = StatusByte | (Data1 << 8) | (Data2 << 16)
-        Value := State ? 127 : 0
-        msg := 0xB0 | (CC << 8) | (Value << 16)
-        
+    KeyStates[KeyIndex] := State
+	if (hMidiOut) {
+        currentCC := BaseCCs[ActiveGroup] + (KeyIndex - 1)
+        val := (State == 1) ? 127 : 0
+        msg := 0xB0 | (currentCC << 8) | (val << 16)
         DllCall("winmm\midiOutShortMsg", "Ptr", hMidiOut, "UInt", msg)
-        Return
     }
-
-    if (State == 1 && KeyStates[KeyName])
-        Return
-    KeyStates[KeyName] := State
-    PostMessage, (State ? 0x0100 : 0x0101), VK, 0, REAPERTrackListWindow1, ahk_class REAPERwnd
 }
+
+ShiftGroup(State) {
+    global ActiveGroup
+    if (State == 1)
+        return
+    ActiveGroup := (ActiveGroup == 3) ? 1 : ActiveGroup + 1
+    UpdateStatus()
+}
+
+UpdateStatus() {
+    global ActiveGroup
+    GuiControl,, ModeText, % ActiveGroup
+    Gui, Show, xCenter yCenter w250 h250 NoActivate
+    SetTimer, RemoveOSD, -250
+}
+
+RemoveOSD:
+    Gui, Hide
+Return
 
 GetMidiOutId(PortName) {
     NumDevs := DllCall("winmm\midiOutGetNumDevs")
@@ -71,15 +67,14 @@ GetMidiOutId(PortName) {
         DeviceID := A_Index - 1
         VarSetCapacity(Caps, 84, 0)
         if (DllCall("winmm\midiOutGetDevCaps", "UInt", DeviceID, "Ptr", &Caps, "UInt", 84) == 0) {
-            ; LoopMIDI names are UTF-16
             if InStr(StrGet(&Caps + 8, 32, "UTF-16"), PortName)
-                Return DeviceID
+                return DeviceID
         }
     }
-    Return -1
+    return -1
 }
 
 OnExit:
-    if (hMidiOut)
-        DllCall("winmm\midiOutClose", "Ptr", hMidiOut)
+if (hMidiOut)
+    DllCall("winmm\midiOutClose", "Ptr", hMidiOut)
 ExitApp
